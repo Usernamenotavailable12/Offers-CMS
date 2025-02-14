@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Offers CMS Editor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    h1, h2, h3, h4 {
+      margin: 5px 0;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 5px;
+    }
+    .card {
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      background: #fff;
+      position: relative;
+    }
+    .drag-handle {
+      cursor: move;
+      font-size: 18px;
+      margin: 5px;
+    }
+    .removeBtn {
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    .thumbnail {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+    }
+    .thumbnail img {
+      max-width: 80px;
+      max-height: 80px;
+      object-fit: cover;
+    }
+    .accordion-header h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .accordion-content {
+      padding: 10px;
+      border-top: 1px solid #ccc;
+      display: none;
+    }
+    .section {
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px 0;
+      font-size: 16px;
+    }
+    #addItemBtn {
+      background: #5cb85c;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    #cardsContainer {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Offers CMS Editor</h1>
+  <p>Select an HTML file that contains your offers component (with a <code>.offers-inner</code> container).</p>
+  <input type="file" id="fileInput" accept=".html">
+  <button id="loadFileBtn">Load File</button>
+
+  <div id="editorContainer" style="display:none;">
+    <h2>Editing Items</h2>
+    <p>You can edit, add, remove, and drag to rearrange items.</p>
+    <button id="addItemBtn">Add New Item</button>
+    <div id="cardsContainer"></div>
+    <button id="saveBtn">Save & Export Updated File</button>
+  </div>
+
+  <!-- Include SortableJS from CDN for drag and drop support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+  <script>
+    let originalHTMLString = ""; // Original file content as a string
+    let itemsData = [];          // Array to hold the items data
+    let sortableInstance = null;
+
+    const fileInput = document.getElementById('fileInput');
+    const loadFileBtn = document.getElementById('loadFileBtn');
+    const editorContainer = document.getElementById('editorContainer');
+    const cardsContainer = document.getElementById('cardsContainer');
+    const saveBtn = document.getElementById('saveBtn');
+    const addItemBtn = document.getElementById('addItemBtn');
+
+    // Helper: extract the parameter from an onclick attribute like switchCurrnetUrl('value')
+    function extractOnclickParam(onclickStr) {
+      const match = onclickStr.match(/switchCurrnetUrl\(['"]([^'"]+)['"]\)/);
+      return match ? match[1] : "";
+    }
+
+    // Render the list of cards based on itemsData
+    function renderCards() {
+      cardsContainer.innerHTML = '';
+      itemsData.forEach((item, index) => {
+        cardsContainer.insertAdjacentHTML('beforeend', createCardHTML(item, index));
+      });
+
+      // Add event listeners for accordion toggle
+      document.querySelectorAll('.accordion-header').forEach(header => {
+        header.addEventListener('click', function() {
+          const content = this.nextElementSibling;
+          content.style.display = (content.style.display === "block") ? "none" : "block";
+        });
+      });
+
+      // Attach event listeners for remove buttons
+      cardsContainer.querySelectorAll('.removeBtn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation(); // Prevent accordion toggle when clicking remove
+          const idx = parseInt(this.parentElement.getAttribute('data-index'));
+          itemsData.splice(idx, 1);
+          renderCards();
+        });
+      });
+
+      // Reinitialize SortableJS
+      if (sortableInstance) {
+        sortableInstance.destroy();
+      }
+      sortableInstance = Sortable.create(cardsContainer, { 
+        handle: '.drag-handle', 
+        animation: 150,
+        onEnd: function() {
+          // After drag, update itemsData based on new DOM order
+          const newOrder = [];
+          cardsContainer.querySelectorAll('.card').forEach(card => {
+            const idx = parseInt(card.getAttribute('data-index'));
+            newOrder.push(itemsData[idx]);
+          });
+          itemsData = newOrder;
+          renderCards();
+        }
+      });
+    }
+
+    // Create the HTML for an editable accordion card for a given item
+    function createCardHTML(item, index) {
+      const thumbSrc = item.images.en ? item.images.en : '';
+      return `
+        <div class="card" data-index="${index}">
+          <div class="drag-handle">☰</div>
+          <button class="removeBtn">Remove</button>
+          <div class="accordion-header">
+            <div class="thumbnail">
+              ${thumbSrc ? `<img src="${thumbSrc}" alt="Thumbnail">` : '<em>No thumbnail</em>'}
+            </div>
+            <h3>Item ${index + 1}</h3>
+          </div>
+          <div class="accordion-content">
+            <div class="section">
+              <label>Onclick Parameter:</label>
+              <input type="text" class="onclickInput" value="${item.onclickParam}">
+            </div>
+            <div class="section">
+              <h4>Images</h4>
+              <label>EN Image URL:</label>
+              <input type="text" class="imgInput" data-lang="en" value="${item.images.en || ''}">
+              <label>KA Image URL:</label>
+              <input type="text" class="imgInput" data-lang="ka" value="${item.images.ka || ''}">
+              <label>RU Image URL:</label>
+              <input type="text" class="imgInput" data-lang="ru" value="${item.images.ru || ''}">
+              <label>TR Image URL:</label>
+              <input type="text" class="imgInput" data-lang="tr" value="${item.images.tr || ''}">
+            </div>
+            <div class="section">
+              <h4>Header Texts</h4>
+              <label>EN:</label>
+              <input type="text" class="headerInput" data-lang="en" value="${item.headers.en || ''}">
+              <label>KA:</label>
+              <input type="text" class="headerInput" data-lang="ka" value="${item.headers.ka || ''}">
+              <label>RU:</label>
+              <input type="text" class="headerInput" data-lang="ru" value="${item.headers.ru || ''}">
+              <label>TR:</label>
+              <input type="text" class="headerInput" data-lang="tr" value="${item.headers.tr || ''}">
+            </div>
+            <div class="section">
+              <h4>Footer Texts</h4>
+              <label>EN:</label>
+              <input type="text" class="footerInput" data-lang="en" value="${item.footers.en || ''}">
+              <label>KA:</label>
+              <input type="text" class="footerInput" data-lang="ka" value="${item.footers.ka || ''}">
+              <label>RU:</label>
+              <input type="text" class="footerInput" data-lang="ru" value="${item.footers.ru || ''}">
+              <label>TR:</label>
+              <input type="text" class="footerInput" data-lang="tr" value="${item.footers.tr || ''}">
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Load and parse the selected HTML file using a temporary container
+    loadFileBtn.addEventListener('click', function() {
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Please select an HTML file.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        originalHTMLString = e.target.result;
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = originalHTMLString;
+        const offersInner = tempDiv.querySelector('.offers-inner');
+        if (!offersInner) {
+          alert("Could not find a container with the class .offers-inner in the file.");
+          return;
+        }
+        itemsData = [];
+        const aElements = offersInner.querySelectorAll('a');
+        aElements.forEach((aElem) => {
+          const itemElem = aElem.querySelector('.offers-item');
+          if (!itemElem) return;
+          const onclickAttr = aElem.getAttribute('onclick') || '';
+          const onclickParam = extractOnclickParam(onclickAttr);
+          const images = {};
+          ['en', 'ka', 'ru', 'tr'].forEach(lang => {
+            const imgElem = itemElem.querySelector(`.offers-image.${lang}`);
+            images[lang] = imgElem ? imgElem.getAttribute('src') : '';
+          });
+          const headers = {};
+          const footers = {};
+          ['en', 'ka', 'ru', 'tr'].forEach(lang => {
+            const headerElem = itemElem.querySelector(`.offers-header.${lang}`);
+            headers[lang] = headerElem ? headerElem.textContent : '';
+            const footerElem = itemElem.querySelector(`.offers-footer.${lang}`);
+            footers[lang] = footerElem ? footerElem.textContent : '';
+          });
+          itemsData.push({ onclickParam, images, headers, footers });
+        });
+        renderCards();
+        editorContainer.style.display = 'block';
+      };
+      reader.readAsText(file);
+    });
+
+    // Add a new empty item
+    addItemBtn.addEventListener('click', function() {
+      const newItem = {
+        onclickParam: '',
+        images: { en: '', ka: '', ru: '', tr: '' },
+        headers: { en: '', ka: '', ru: '', tr: '' },
+        footers: { en: '', ka: '', ru: '', tr: '' }
+      };
+      itemsData.push(newItem);
+      renderCards();
+    });
+
+    // Save and export the updated file without extra document wrappers
+    saveBtn.addEventListener('click', function() {
+      const updatedItems = [];
+      cardsContainer.querySelectorAll('.card').forEach(card => {
+        const onclickParam = card.querySelector('.onclickInput').value;
+        const images = {};
+        card.querySelectorAll('.imgInput').forEach(input => {
+          images[input.getAttribute('data-lang')] = input.value;
+        });
+        const headers = {};
+        card.querySelectorAll('.headerInput').forEach(input => {
+          headers[input.getAttribute('data-lang')] = input.value;
+        });
+        const footers = {};
+        card.querySelectorAll('.footerInput').forEach(input => {
+          footers[input.getAttribute('data-lang')] = input.value;
+        });
+        updatedItems.push({ onclickParam, images, headers, footers });
+      });
+
+      // Use a temporary container to update the original file content
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = originalHTMLString;
+      const offersInner = tempDiv.querySelector('.offers-inner');
+      if (offersInner) {
+        offersInner.innerHTML = ''; // Clear existing items
+        updatedItems.forEach(item => {
+          const aElem = document.createElement('a');
+          aElem.setAttribute('onclick', `switchCurrnetUrl('${item.onclickParam}')`);
+          const itemElem = document.createElement('item');
+          itemElem.className = 'offers-item';
+          ['en', 'ka', 'ru', 'tr'].forEach(lang => {
+            const img = document.createElement('img');
+            img.className = `offers-image ${lang}`;
+            img.setAttribute('src', item.images[lang] || '');
+            img.setAttribute('alt', `Offer (${lang.toUpperCase()})`);
+            itemElem.appendChild(img);
+          });
+          const copyElem = document.createElement('copy');
+          copyElem.className = 'offers-text-wrapper';
+          ['en', 'ka', 'ru', 'tr'].forEach(lang => {
+            const header = document.createElement('copy');
+            header.className = `offers-header ${lang}`;
+            header.textContent = item.headers[lang] || '';
+            copyElem.appendChild(header);
+          });
+          ['en', 'ka', 'ru', 'tr'].forEach(lang => {
+            const footer = document.createElement('copy');
+            footer.className = `offers-footer ${lang}`;
+            footer.textContent = item.footers[lang] || '';
+            copyElem.appendChild(footer);
+          });
+          itemElem.appendChild(copyElem);
+          aElem.appendChild(itemElem);
+          offersInner.appendChild(aElem);
+        });
+      }
+      const updatedHTML = tempDiv.innerHTML;
+      const blob = new Blob([updatedHTML], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = 'updated_offers.html';
+      downloadLink.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
