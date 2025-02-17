@@ -3,95 +3,197 @@
 <head>
   <meta charset="UTF-8">
   <title>Offers CMS Editor</title>
+  <!-- Google Fonts for a modern look -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f5f5f5;
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f2f5;
+      color: #333;
     }
     h1, h2, h3, h4 {
-      margin: 5px 0;
+      margin: 0 0 10px 0;
+      font-weight: 500;
     }
-    input[type="text"] {
+    h1 {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+    p {
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    input[type="text"],
+    input[type="file"] {
       width: 100%;
-      padding: 5px;
-      margin-bottom: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      transition: border-color 0.3s;
+    }
+    input[type="text"]:focus,
+    input[type="file"]:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:focus {
+      outline: none;
+    }
+    #loadFileBtn {
+      background-color: #007bff;
+      color: #fff;
+    }
+    #loadFileBtn:hover {
+      background-color: #0069d9;
+    }
+    #createDefaultBtn {
+      background-color: #6c757d;
+      color: #fff;
+      margin-left: 10px;
+    }
+    #createDefaultBtn:hover {
+      background-color: #5a6268;
+    }
+    #addItemBtn {
+      background-color: #28a745;
+      color: #fff;
+    }
+    #addItemBtn:hover {
+      background-color: #218838;
+    }
+    #saveBtn {
+      background-color: #17a2b8;
+      color: #fff;
+    }
+    #saveBtn:hover {
+      background-color: #138496;
+    }
+    #editorContainer {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      margin-top: 20px;
+    }
+    #cardsContainer {
+      margin-top: 20px;
     }
     .card {
-      border: 1px solid #ccc;
-      margin-bottom: 10px;
       background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      padding: 15px;
       position: relative;
+      transition: box-shadow 0.3s, transform 0.3s;
+    }
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
     }
     .drag-handle {
       cursor: move;
-      font-size: 18px;
-      margin: 5px;
+      font-size: 20px;
+      margin-right: 10px;
+      color: #6c757d;
     }
     .removeBtn {
-      background: #d9534f;
+      background: #dc3545;
       color: #fff;
       border: none;
       padding: 5px 10px;
       cursor: pointer;
       position: absolute;
-      top: 10px;
-      right: 10px;
+      top: 15px;
+      right: 15px;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    .removeBtn:hover {
+      background: #c82333;
+    }
+    .accordion-header {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+    }
+    .accordion-header h3 {
+      margin: 0;
+      font-size: 18px;
+      flex-grow: 1;
     }
     .thumbnail {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px;
       background: #007bff;
       color: #fff;
-      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 4px;
     }
     .thumbnail img {
-      max-width: 80px;
-      max-height: 80px;
+      max-width: 60px;
+      max-height: 60px;
       object-fit: cover;
-    }
-    .accordion-header h3 {
-      margin: 0;
-      font-size: 16px;
+      border-radius: 4px;
     }
     .accordion-content {
-      padding: 10px;
-      border-top: 1px solid #ccc;
+      padding: 10px 0;
       display: none;
+      animation: fadeIn 0.3s ease-in-out;
     }
     .section {
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
-    button {
-      padding: 10px 20px;
-      margin: 5px 0;
-      font-size: 16px;
+    .section label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 5px;
     }
-    #addItemBtn {
-      background: #5cb85c;
-      color: #fff;
-      border: none;
-      cursor: pointer;
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
-    #cardsContainer {
-      margin-top: 20px;
+    /* Container for centering content */
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
     }
   </style>
 </head>
 <body>
-  <h1>Offers CMS Editor</h1>
-  <p>Select an HTML file that contains your offers component (with a <code>.offers-inner</code> container).</p>
-  <input type="file" id="fileInput" accept=".html">
-  <button id="loadFileBtn">Load File</button>
+  <div class="container">
+    <h1>Offers CMS Editor</h1>
+    <p>Select an HTML file that contains your offers component (with a <code>.offers-inner</code> container) or create a default file.</p>
+    <input type="file" id="fileInput" accept=".html">
+    <button id="loadFileBtn">Load File</button>
+    <button id="createDefaultBtn">Create Default File</button>
 
-  <div id="editorContainer" style="display:none;">
-    <h2>Editing Items</h2>
-    <p>You can edit, add, remove, and drag to rearrange items.</p>
-    <button id="addItemBtn">Add New Item</button>
-    <div id="cardsContainer"></div>
-    <button id="saveBtn">Save & Export Updated File</button>
+    <div id="editorContainer" style="display:none;">
+      <h2>Editing Items</h2>
+      <p>You can edit, add, remove, and drag to rearrange items.</p>
+      <button id="addItemBtn">Add New Item</button>
+      <div id="cardsContainer"></div>
+      <button id="saveBtn">Save & Export Updated File</button>
+    </div>
   </div>
 
   <!-- Include SortableJS from CDN for drag and drop support -->
@@ -103,6 +205,7 @@
 
     const fileInput = document.getElementById('fileInput');
     const loadFileBtn = document.getElementById('loadFileBtn');
+    const createDefaultBtn = document.getElementById('createDefaultBtn');
     const editorContainer = document.getElementById('editorContainer');
     const cardsContainer = document.getElementById('cardsContainer');
     const saveBtn = document.getElementById('saveBtn');
@@ -258,6 +361,44 @@
         editorContainer.style.display = 'block';
       };
       reader.readAsText(file);
+    });
+
+    // Create a default file with a few sample items if no file is available
+    createDefaultBtn.addEventListener('click', function() {
+      const defaultHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Default Offers</title>
+</head>
+<body>
+  <div class="offers-inner"></div>
+</body>
+</html>`;
+      originalHTMLString = defaultHTML;
+      // Create a few sample items
+      itemsData = [
+        {
+          onclickParam: 'sample1',
+          images: { en: 'https://via.placeholder.com/60', ka: 'https://via.placeholder.com/60', ru: 'https://via.placeholder.com/60', tr: 'https://via.placeholder.com/60' },
+          headers: { en: 'Header EN 1', ka: 'Header KA 1', ru: 'Header RU 1', tr: 'Header TR 1' },
+          footers: { en: 'Footer EN 1', ka: 'Footer KA 1', ru: 'Footer RU 1', tr: 'Footer TR 1' }
+        },
+        {
+          onclickParam: 'sample2',
+          images: { en: 'https://via.placeholder.com/60', ka: 'https://via.placeholder.com/60', ru: 'https://via.placeholder.com/60', tr: 'https://via.placeholder.com/60' },
+          headers: { en: 'Header EN 2', ka: 'Header KA 2', ru: 'Header RU 2', tr: 'Header TR 2' },
+          footers: { en: 'Footer EN 2', ka: 'Footer KA 2', ru: 'Footer RU 2', tr: 'Footer TR 2' }
+        },
+        {
+          onclickParam: 'sample3',
+          images: { en: 'https://via.placeholder.com/60', ka: 'https://via.placeholder.com/60', ru: 'https://via.placeholder.com/60', tr: 'https://via.placeholder.com/60' },
+          headers: { en: 'Header EN 3', ka: 'Header KA 3', ru: 'Header RU 3', tr: 'Header TR 3' },
+          footers: { en: 'Footer EN 3', ka: 'Footer KA 3', ru: 'Footer RU 3', tr: 'Footer TR 3' }
+        }
+      ];
+      renderCards();
+      editorContainer.style.display = 'block';
     });
 
     // Add a new empty item
